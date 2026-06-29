@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Hanken Grotesk', sans-serif;
+  color: #21201d;
+  -webkit-font-smoothing: antialiased;
+  background: #e9e7e1;
+}
+
+.font-display { font-family: 'Bricolage Grotesque', sans-serif; }
+.font-mono-custom { font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+@keyframes mendScan {
+  0%   { transform: translateY(2px); }
+  100% { transform: translateY(172px); }
+}
+@keyframes mendPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .45; }
+}
+@keyframes mendGlow {
+  0%, 100% { opacity: .5; }
+  50%       { opacity: .85; }
+}
+
+.anim-scan  { animation: mendScan  2.6s ease-in-out infinite alternate; }
+.anim-pulse { animation: mendPulse 1.8s infinite; }
+.anim-glow  { animation: mendGlow  3.4s ease-in-out infinite; }
+.anim-pulse-fast { animation: mendPulse 1.4s infinite; }
