@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import PhoneShell from "@/components/PhoneShell";
+import { beep, chime, fanfare, speak, stopSpeaking } from "@/lib/audio";
+import { saveSession } from "@/lib/db";
 
 type Exercise = {
   name: string;
@@ -104,7 +106,53 @@ export default function PlayerPage() {
     return () => clearInterval(id);
   }, [startNext, completeSet]);
 
-  const toggle = () => setS((p) => ({ ...p, playing: !p.playing, phase: p.phase === "done" ? "exercise" : p.phase }));
+  const toggle = () => setS((p) => {
+    const starting = !p.playing;
+    if (starting && p.phase === "exercise") {
+      const ex = EXERCISES[p.idx];
+      speak(`${ex.name}. Set ${p.set} of ${ex.sets}. ${ex.cue}`);
+    }
+    if (!starting) stopSpeaking();
+    return { ...p, playing: starting, phase: p.phase === "done" ? "exercise" : p.phase };
+  });
+
+  // ── Audio guidance: react to state transitions ──
+  const prevRef = useRef(s);
+  useEffect(() => {
+    const p = prevRef.current;
+    prevRef.current = s;
+    if (p === s) return;
+
+    // Set/exercise finished → rest begins
+    if (p.phase === "exercise" && s.phase === "rest") {
+      chime();
+      speak(`Done. Rest ${s.restLeft} seconds.`);
+    }
+    // Rest counting down: tick the last 3 seconds
+    if (s.phase === "rest" && s.playing && s.restLeft !== p.restLeft && s.restLeft > 0 && s.restLeft <= 3) {
+      beep();
+    }
+    // Hold exercises: tick the last 3 seconds of the hold
+    if (s.phase === "exercise" && s.playing && s.holdLeft !== p.holdLeft && s.holdLeft > 0 && s.holdLeft <= 3) {
+      beep();
+    }
+    // Rest over → next set/exercise begins
+    if (p.phase === "rest" && s.phase === "exercise") {
+      const ex = EXERCISES[s.idx];
+      chime();
+      speak(`${ex.name}. Set ${s.set} of ${ex.sets}. ${ex.cue}`);
+    }
+    // Session complete
+    if (p.phase !== "done" && s.phase === "done") {
+      fanfare();
+      speak("Session complete. Nice work.");
+      saveSession({ exercisesCompleted: EXERCISES.length, totalExercises: EXERCISES.length });
+    }
+  }, [s]);
+
+  // Stop narration when leaving the page
+  useEffect(() => () => stopSpeaking(), []);
+
   const countRep = () => setS((p) => {
     const ns = { ...p };
     const ex = EXERCISES[ns.idx];

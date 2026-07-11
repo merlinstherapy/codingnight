@@ -1,15 +1,29 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PhoneShell from "@/components/PhoneShell";
+import { saveCheckin } from "@/lib/db";
 
 const areas = ["Lower back", "Hips", "Glutes", "Hamstrings", "Neck"];
 const stiffness = ["None", "Mild", "Moderate", "High"];
 
 export default function CheckinPage() {
+  const router = useRouter();
   const [pain, setPain] = useState(30);
   const [selectedArea, setSelectedArea] = useState("Lower back");
   const [selectedStiff, setSelectedStiff] = useState("Moderate");
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    setSaving(true);
+    // Fails soft when not logged in — demo mode keeps working
+    await saveCheckin({
+      painLevel: Math.round(pain / 10),
+      tensionAreas: [selectedArea],
+      stiffness: selectedStiff.toLowerCase(),
+    });
+    router.push("/order");
+  }
 
   return (
     <PhoneShell>
@@ -168,22 +182,27 @@ export default function CheckinPage() {
       </div>
 
       <div style={{ position: "absolute", left: 22, right: 22, bottom: 26 }}>
-        <Link href="/order" style={{ textDecoration: "none" }}>
-          <div
-            style={{
-              background: "#1f7a6d",
-              color: "#fff",
-              textAlign: "center",
-              padding: 16,
-              borderRadius: 15,
-              fontWeight: 700,
-              fontSize: 15,
-              boxShadow: "0 12px 24px -10px rgba(31,122,109,.75)",
-            }}
-          >
-            Use today&apos;s plan →
-          </div>
-        </Link>
+        <button
+          onClick={submit}
+          disabled={saving}
+          style={{
+            width: "100%",
+            background: "#1f7a6d",
+            color: "#fff",
+            textAlign: "center",
+            padding: 16,
+            borderRadius: 15,
+            fontWeight: 700,
+            fontSize: 15,
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            opacity: saving ? 0.6 : 1,
+            boxShadow: "0 12px 24px -10px rgba(31,122,109,.75)",
+          }}
+        >
+          {saving ? "Saving…" : "Use today's plan →"}
+        </button>
       </div>
     </PhoneShell>
   );

@@ -4,6 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Mend — Physio prescription, guided",
   description: "Your physio prescription, turned into one guided follow-along flow.",
+  manifest: "/manifest.json",
+};
+
+export const viewport = {
+  themeColor: "#123a4f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
