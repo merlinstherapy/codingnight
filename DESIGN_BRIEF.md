@@ -58,6 +58,23 @@ designed so users don't need to look at the screen. Design needs:
 - Shown when adding a 2nd routine or accessing history >7 days
 - Tone: supportive, not punishing. "Keep your recovery going"
 
+### 7. Marketing landing page (desktop-first — NEW)
+The app itself stays mobile-shaped, but the product needs a public website that sells it:
+- **Hero**: one-liner + phone mockup showing the player mid-session + "Start free" CTA
+- **How it works**: 3 steps — snap your prescription → check in daily → follow along
+- **Trust section**: medical disclaimer positioning, "built with physiotherapists", privacy promise
+- **Pricing**: free vs. paid tier comparison; later a "For clinics" tier teaser
+- **Footer**: Terms, Privacy, contact
+- Desktop-first responsive; this is the only desktop-designed surface in the product
+
+### 8. App chrome rules (IMPORTANT — applies to every app screen)
+The v1 frames draw a fake phone (bezel, notch, "9:41" status bar, home indicator). That was
+mockup chrome — **design v2 app screens edge-to-edge with no fake phone frame**:
+- On real phones the app runs full-bleed as a PWA; respect safe-area insets (notch/home bar)
+- No hardcoded status bar — the real device provides one
+- On desktop, app routes render as a centered ~430px column on the sand background
+- The phone bezel may still be used in *marketing* imagery (landing page mockups), never in-app
+
 ## Existing technical state (already built in code)
 - Next.js + Supabase; magic-link auth at `/login`
 - Postgres schema with row-level security: profiles, routines, exercises, checkins, sessions
