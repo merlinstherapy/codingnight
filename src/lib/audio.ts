@@ -5,6 +5,12 @@
  *  Everything degrades silently if the browser blocks audio. */
 
 let ctx: AudioContext | null = null;
+let masterVolume = 0.7;
+
+/** 0–1. Scales beeps/chimes and narration volume. */
+export function setVolume(v: number) {
+  masterVolume = Math.min(1, Math.max(0, v));
+}
 
 function audioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -24,6 +30,7 @@ function audioCtx(): AudioContext | null {
 function tone(freq: number, start: number, dur: number, vol = 0.18) {
   const ac = audioCtx();
   if (!ac) return;
+  vol *= masterVolume / 0.7;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
   osc.type = "sine";
@@ -64,6 +71,7 @@ export function speak(text: string, opts?: { rate?: number }) {
     const u = new SpeechSynthesisUtterance(text);
     u.rate = opts?.rate ?? 1;
     u.pitch = 1;
+    u.volume = masterVolume;
     window.speechSynthesis.speak(u);
   } catch {
     /* narration is best-effort */

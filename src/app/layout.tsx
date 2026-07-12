@@ -22,9 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[#e9e7e1] flex items-center justify-center">
-        <div className="w-[390px] min-h-[844px] relative">{children}</div>
-      </body>
+      <body className="min-h-screen bg-[#e9e7e1]">{children}</body>
     </html>
   );
 }

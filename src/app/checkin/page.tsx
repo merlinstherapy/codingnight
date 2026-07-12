@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import PhoneShell from "@/components/PhoneShell";
+import Shell from "@/components/Shell";
 import { saveCheckin } from "@/lib/db";
 
 const areas = ["Lower back", "Hips", "Glutes", "Hamstrings", "Neck"];
@@ -26,8 +26,8 @@ export default function CheckinPage() {
   }
 
   return (
-    <PhoneShell>
-      <div style={{ position: "absolute", inset: "52px 0 90px 0", padding: "10px 22px 0", overflowY: "auto" }}>
+    <Shell>
+      <div style={{ flex: 1, padding: "24px 24px 0" }}>
         <div className="font-display" style={{ fontWeight: 700, fontSize: 24, letterSpacing: "-.02em" }}>
           How&apos;s your back today?
         </div>
@@ -178,15 +178,13 @@ export default function CheckinPage() {
             <div>· Capped end-range holds at <b>40s</b></div>
           </div>
         </div>
-        <div style={{ height: 10 }} />
-      </div>
-
-      <div style={{ position: "absolute", left: 22, right: 22, bottom: 26 }}>
         <button
           onClick={submit}
           disabled={saving}
           style={{
             width: "100%",
+            marginTop: 24,
+            marginBottom: 30,
             background: "#1f7a6d",
             color: "#fff",
             textAlign: "center",
@@ -204,6 +202,6 @@ export default function CheckinPage() {
           {saving ? "Saving…" : "Use today's plan →"}
         </button>
       </div>
-    </PhoneShell>
+    </Shell>
   );
 }

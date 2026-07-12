@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ReactNode } from "react";
-import PhoneShell from "@/components/PhoneShell";
+import Shell from "@/components/Shell";
 
 export default function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <PhoneShell>
-      <div style={{ position: "absolute", inset: "52px 0 0", padding: "10px 22px 30px", overflowY: "auto" }}>
-        <Link href="/login" style={{ textDecoration: "none", color: "#6f6a63", fontSize: 20 }}>‹</Link>
+    <Shell>
+      <div style={{ flex: 1, padding: "24px 24px 40px" }}>
+        <Link href="/" style={{ textDecoration: "none", color: "#6f6a63", fontSize: 20 }}>‹</Link>
         <div className="font-display" style={{ fontWeight: 700, fontSize: 24, letterSpacing: "-.02em", marginTop: 8 }}>
           {title}
         </div>
@@ -14,7 +14,7 @@ export default function LegalPage({ title, children }: { title: string; children
           {children}
         </div>
       </div>
-    </PhoneShell>
+    </Shell>
   );
 }
 
