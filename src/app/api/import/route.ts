@@ -113,9 +113,14 @@ export async function POST(req: NextRequest) {
   }
 
   const data = await res.json();
-  const text: string = data?.content?.[0]?.text ?? "";
+  const text: string = (data?.content ?? [])
+    .filter((b: { type: string }) => b.type === "text")
+    .map((b: { text: string }) => b.text)
+    .join("\n");
+  if (!text) console.error("Claude response had no text blocks:", JSON.stringify(data).slice(0, 800));
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
+    console.error("No JSON in Claude response. Text was:", text.slice(0, 800));
     return NextResponse.json({ error: "Couldn't find exercises in this photo — try a clearer shot" }, { status: 422 });
   }
 
