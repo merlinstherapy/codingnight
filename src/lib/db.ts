@@ -51,6 +51,62 @@ export async function saveSession(input: {
   return { saved: true };
 }
 
+export type NewExercise = {
+  name: string;
+  area: string;
+  type: "reps" | "hold";
+  reps: number;
+  hold_seconds: number;
+  sets: number;
+  rest_seconds: number;
+  cue: string;
+  phase: "warmup" | "activate" | "stabilize" | "cooldown";
+};
+
+export async function saveRoutine(input: {
+  name: string;
+  prescriberName?: string | null;
+  exercises: NewExercise[];
+}) {
+  const user = await getUser();
+  if (!user) return { saved: false, reason: "not-logged-in" };
+
+  const { data: routine, error: rErr } = await supabase
+    .from("routines")
+    .insert({
+      user_id: user.id,
+      name: input.name,
+      source: "import",
+      prescriber_name: input.prescriberName ?? null,
+    })
+    .select("id")
+    .single();
+  if (rErr || !routine) {
+    console.warn("saveRoutine failed:", rErr?.message);
+    return { saved: false, reason: rErr?.message ?? "no-routine" };
+  }
+
+  const rows = input.exercises.map((e, i) => ({
+    routine_id: routine.id,
+    position: i,
+    phase: e.phase,
+    name: e.name,
+    area: e.area,
+    type: e.type,
+    reps: e.reps,
+    hold_seconds: e.hold_seconds,
+    sets: e.sets,
+    rest_seconds: e.rest_seconds,
+    cue: e.cue,
+  }));
+  const { error: eErr } = await supabase.from("exercises").insert(rows);
+  if (eErr) {
+    console.warn("saveRoutine exercises failed:", eErr.message);
+    return { saved: false, reason: eErr.message };
+  }
+  return { saved: true, routineId: routine.id };
+}
+
 export async function getRecentCheckins(days = 14) {
   const user = await getUser();
   if (!user) return [];
