@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import { exportMyData } from "@/lib/db";
 
 const row: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 15px" };
 const sectionLabel: React.CSSProperties = { marginTop: 16, fontSize: 11.5, fontWeight: 800, letterSpacing: ".07em", color: "#9a958c" };
@@ -25,6 +26,38 @@ export default function ProfilePage() {
   async function signOut() {
     await supabase.auth.signOut();
     router.push("/");
+  }
+
+  async function exportData() {
+    const data = await exportMyData();
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `mend-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function deleteAccount() {
+    const sure = window.confirm(
+      "Delete your account and ALL your data (routines, check-ins, sessions)? This cannot be undone."
+    );
+    if (!sure) return;
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    const res = await fetch("/api/account/delete", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      await supabase.auth.signOut();
+      router.push("/");
+    } else {
+      const j = await res.json().catch(() => ({}));
+      window.alert(j.error ?? "Delete failed — please try again.");
+    }
   }
 
   if (loading) {
@@ -124,10 +157,10 @@ export default function ProfilePage() {
 
         <div style={sectionLabel}>YOUR DATA</div>
         <div style={card}>
-          <div style={{ ...row, borderBottom: "1px solid #f0ede6" }}>
+          <div onClick={exportData} style={{ ...row, borderBottom: "1px solid #f0ede6", cursor: "pointer" }}>
             <div style={{ fontWeight: 600, fontSize: 14 }}>Export my data</div><span style={{ color: "#c9c4ba", fontSize: 17 }}>›</span>
           </div>
-          <div style={{ ...row, borderBottom: "1px solid #f0ede6" }}>
+          <div onClick={deleteAccount} style={{ ...row, borderBottom: "1px solid #f0ede6", cursor: "pointer" }}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "#b0492a" }}>Delete account &amp; data</div><span style={{ color: "#c9c4ba", fontSize: 17 }}>›</span>
           </div>
           <Link href="/terms" style={{ textDecoration: "none", color: "inherit" }}>

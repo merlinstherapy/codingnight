@@ -107,6 +107,42 @@ export async function saveRoutine(input: {
   return { saved: true, routineId: routine.id };
 }
 
+/** Record how the finished session felt (Better/Same/Worse) on the most recent session row. */
+export async function noteLatestSession(feel: string) {
+  const user = await getUser();
+  if (!user) return { saved: false, reason: "not-logged-in" };
+  const { data: latest } = await supabase
+    .from("sessions")
+    .select("id")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latest) return { saved: false, reason: "no-session" };
+  const { error } = await supabase.from("sessions").update({ notes: `felt:${feel.toLowerCase()}` }).eq("id", latest.id);
+  if (error) { console.warn("noteLatestSession failed:", error.message); return { saved: false, reason: error.message }; }
+  return { saved: true };
+}
+
+/** Everything the user owns, as one JSON object (for data export). */
+export async function exportMyData() {
+  const user = await getUser();
+  if (!user) return null;
+  const [profile, routines, checkins, sessions] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+    supabase.from("routines").select("*, exercises(*)"),
+    supabase.from("checkins").select("*"),
+    supabase.from("sessions").select("*"),
+  ]);
+  return {
+    exported_at: new Date().toISOString(),
+    email: user.email,
+    profile: profile.data,
+    routines: routines.data ?? [],
+    checkins: checkins.data ?? [],
+    sessions: sessions.data ?? [],
+  };
+}
+
 export async function getRecentCheckins(days = 14) {
   const user = await getUser();
   if (!user) return [];

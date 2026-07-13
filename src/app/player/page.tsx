@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import VideoSlot from "@/components/VideoSlot";
 import { beep, chime, fanfare, speak, stopSpeaking, setVolume } from "@/lib/audio";
-import { saveSession } from "@/lib/db";
+import { saveSession, noteLatestSession } from "@/lib/db";
 
 type Exercise = {
   name: string; area: string; type: "reps" | "hold";
@@ -193,6 +194,7 @@ export default function PlayerPage() {
   const segs = EXERCISES.map((_, i) => (i < s.idx ? "#1f7a6d" : i === s.idx ? "#34d0bb" : "rgba(255,255,255,.16)"));
 
   function finish() {
+    if (feel) noteLatestSession(feel); // fire-and-forget; fails soft for guests
     router.push("/progress");
   }
 
@@ -308,14 +310,8 @@ export default function PlayerPage() {
           <span onClick={() => setShowAudioSheet(true)} style={{ width: 30, height: 30, borderRadius: "50%", background: "#fff", border: "1px solid #e3e0d8", color: "#6f6a63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer" }}>🔊</span>
         </div>
 
-        <div style={{ marginTop: 14, height: 188, borderRadius: 18, position: "relative", overflow: "hidden", background: "repeating-linear-gradient(135deg,#e7f1ef 0 13px,#f0f6f4 13px 26px)" }}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(110% 80% at 50% 35%,rgba(31,122,109,.14),transparent 70%)" }} />
-          <span style={{ position: "absolute", top: 12, right: 12, background: "#123a4f", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: ".05em", padding: "4px 8px", borderRadius: 8 }}>FORM VIEW</span>
-          <span className="font-mono-custom" style={{ position: "absolute", left: 0, right: 0, top: "46%", textAlign: "center", color: "rgba(31,122,109,.45)", fontSize: 12, letterSpacing: ".1em" }}>DEMO LOOP</span>
-          <div style={{ position: "absolute", left: 14, bottom: 12, display: "flex", alignItems: "center", gap: 7 }}>
-            <span className="anim-pulse-fast" style={{ width: 7, height: 7, borderRadius: "50%", background: "#1f7a6d" }} />
-            <span className="font-mono-custom" style={{ fontSize: 11, color: "#5f7d77" }}>loop · 0:08</span>
-          </div>
+        <div style={{ marginTop: 14 }}>
+          <VideoSlot exerciseName={cur.name} />
         </div>
 
         <div style={{ marginTop: 15, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
