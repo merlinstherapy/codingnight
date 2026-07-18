@@ -107,6 +107,52 @@ export async function saveRoutine(input: {
   return { saved: true, routineId: routine.id };
 }
 
+/** The signed-in user's most recent active routine, shaped for the player.
+ *  Returns null for guests (player falls back to the demo routine). */
+export async function getActiveRoutinePlan() {
+  const user = await getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("routines")
+    .select("id, name, exercises(*)")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  type Row = { position: number; name: string; area: string | null; type: string; reps: number | null; hold_seconds: number | null; sets: number | null; rest_seconds: number | null; cue: string | null };
+  const list = ((data.exercises ?? []) as Row[])
+    .sort((a, b) => a.position - b.position)
+    .map((e) => ({
+      name: e.name,
+      area: e.area ?? "",
+      type: (e.type === "hold" ? "hold" : "reps") as "reps" | "hold",
+      reps: e.reps ?? 0,
+      hold: e.hold_seconds ?? 0,
+      sets: e.sets ?? 1,
+      rest: e.rest_seconds ?? 30,
+      cue: e.cue ?? "",
+    }));
+  return { id: data.id as string, name: data.name as string, list };
+}
+
+/** All the user's routines with exercise counts (for the home list). */
+export async function getMyRoutines() {
+  const user = await getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("routines")
+    .select("id, name, is_active, created_at, exercises(id)")
+    .order("created_at", { ascending: false });
+  if (error) { console.warn(error.message); return []; }
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    active: !!r.is_active,
+    count: (r.exercises as { id: string }[] | null)?.length ?? 0,
+  }));
+}
+
 /** Record how the finished session felt (Better/Same/Worse) on the most recent session row. */
 export async function noteLatestSession(feel: string) {
   const user = await getUser();

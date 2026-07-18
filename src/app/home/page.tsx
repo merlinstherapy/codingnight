@@ -4,29 +4,35 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/lib/supabase";
+import { getMyRoutines } from "@/lib/db";
 
-type State = { loading: boolean; email: string | null; hasRoutines: boolean };
+type Routine = { id: string; name: string; active: boolean; count: number };
+type State = { loading: boolean; email: string | null; routines: Routine[] };
+
+const DEMO_ROUTINES: Routine[] = [
+  { id: "demo-1", name: "Lower Back Recovery", active: true, count: 6 },
+  { id: "demo-2", name: "Morning Mobility", active: false, count: 5 },
+];
 
 export default function HomePage() {
-  const [s, setS] = useState<State>({ loading: true, email: null, hasRoutines: false });
+  const [s, setS] = useState<State>({ loading: true, email: null, routines: [] });
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       const user = data.user;
-      if (!user) { setS({ loading: false, email: null, hasRoutines: false }); return; }
-      const { count } = await supabase
-        .from("routines")
-        .select("id", { count: "exact", head: true })
-        .eq("is_active", true);
-      setS({ loading: false, email: user.email ?? null, hasRoutines: (count ?? 0) > 0 });
+      if (!user) { setS({ loading: false, email: null, routines: [] }); return; }
+      const routines = await getMyRoutines();
+      setS({ loading: false, email: user.email ?? null, routines });
     })();
   }, []);
 
   const name = s.email ? s.email.split("@")[0] : "Sam";
   const initial = name[0]?.toUpperCase() ?? "S";
   // Signed-in users with no routines see first-run; guests get the demo home.
-  const firstRun = !s.loading && s.email !== null && !s.hasRoutines;
+  const firstRun = !s.loading && s.email !== null && s.routines.length === 0;
+  const routines = s.email ? s.routines : DEMO_ROUTINES;
+  const today = routines.find((r) => r.active) ?? routines[0];
 
   return (
     <Shell>
@@ -97,8 +103,8 @@ export default function HomePage() {
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34d0bb" }} />
                 TODAY · ADAPTED FOR LOW PAIN
               </div>
-              <div className="font-display" style={{ marginTop: 9, fontWeight: 700, fontSize: 23, letterSpacing: "-.02em" }}>Lower Back Recovery</div>
-              <div style={{ marginTop: 5, fontSize: 13, color: "#a9c7c1" }}>6 exercises · ~14 min · low intensity</div>
+              <div className="font-display" style={{ marginTop: 9, fontWeight: 700, fontSize: 23, letterSpacing: "-.02em" }}>{today?.name ?? "Your routine"}</div>
+              <div style={{ marginTop: 5, fontSize: 13, color: "#a9c7c1" }}>{today?.count ?? 0} exercises · low intensity</div>
               <div style={{ marginTop: 13, display: "flex", gap: 5 }}>
                 {[true, true, false, false, false, false].map((done, i) => (
                   <span key={i} style={{ width: 30, height: 6, borderRadius: 3, background: done ? "#34d0bb" : "rgba(255,255,255,.22)" }} />
@@ -117,16 +123,13 @@ export default function HomePage() {
               <div style={{ fontSize: 12.5, color: "#1f7a6d", fontWeight: 700 }}>All</div>
             </div>
             <div style={{ marginTop: 11, display: "flex", flexDirection: "column", gap: 9 }}>
-              {[
-                { title: "Lower Back Recovery", meta: "6 exercises · daily", active: true, stripe: ["#e7f1ef", "#f0f6f4"] },
-                { title: "Morning Mobility", meta: "5 exercises · 8 min", active: false, stripe: ["#efece5", "#f6f3ec"] },
-              ].map((r) => (
-                <div key={r.title} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff", border: "1px solid #ece9e2", borderRadius: 14, padding: "11px 13px" }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 11, background: `repeating-linear-gradient(45deg,${r.stripe[0]} 0 6px,${r.stripe[1]} 6px 12px)`, flexShrink: 0 }} />
+              {routines.map((r, i) => (
+                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff", border: "1px solid #ece9e2", borderRadius: 14, padding: "11px 13px" }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 11, background: `repeating-linear-gradient(45deg,${i === 0 ? "#e7f1ef" : "#efece5"} 0 6px,${i === 0 ? "#f0f6f4" : "#f6f3ec"} 6px 12px)`, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{r.title}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{r.name}</div>
                     <div style={{ color: "#9a958c", fontSize: 11.5 }}>
-                      {r.meta}
+                      {r.count} exercises
                       {r.active && <> · <span style={{ color: "#1f7a6d", fontWeight: 600 }}>active</span></>}
                     </div>
                   </div>

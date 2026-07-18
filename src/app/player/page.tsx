@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import VideoSlot from "@/components/VideoSlot";
 import { beep, chime, fanfare, speak, stopSpeaking, setVolume } from "@/lib/audio";
-import { saveSession, noteLatestSession } from "@/lib/db";
+import { saveSession, noteLatestSession, getActiveRoutinePlan } from "@/lib/db";
 
 type Exercise = {
   name: string; area: string; type: "reps" | "hold";
   reps: number; hold?: number; sets: number; rest: number; cue: string;
 };
 
-const EXERCISES: Exercise[] = [
+const DEMO_EXERCISES: Exercise[] = [
   { name: "Cat–Cow",        area: "Spine mobility", type: "reps", reps: 10, sets: 1, rest: 15, cue: "Move slowly with your breath — round and arch one vertebra at a time." },
   { name: "Pelvic Tilt",    area: "Core · lumbar",  type: "reps", reps: 12, sets: 2, rest: 20, cue: "Flatten your lower back gently into the floor. Small, controlled motion." },
   { name: "Glute Bridge",   area: "Glutes",         type: "reps", reps: 12, sets: 3, rest: 45, cue: "Squeeze your glutes at the top and keep ribs down — don't arch your lower back." },
@@ -50,6 +50,20 @@ export default function PlayerPage() {
   const [feel, setFeel] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<AudioPrefs>(DEFAULT_PREFS);
   const [s, setS] = useState<S>({ idx: 0, set: 1, repsDone: 0, holdLeft: 0, phase: "exercise", restLeft: 0, playing: false });
+  const [plan, setPlan] = useState<{ name: string; list: Exercise[] }>({ name: "Lower Back Recovery", list: DEMO_EXERCISES });
+
+  // The routine being played: the user's saved active routine, or the demo for guests.
+  const planRef = useRef(plan.list);
+  planRef.current = plan.list;
+  const EXERCISES = plan.list;
+  useEffect(() => {
+    getActiveRoutinePlan().then((p) => {
+      if (p && p.list.length) {
+        setPlan({ name: p.name, list: p.list });
+        setS({ idx: 0, set: 1, repsDone: 0, holdLeft: 0, phase: "exercise", restLeft: 0, playing: false });
+      }
+    });
+  }, []);
 
   // load / persist audio prefs
   useEffect(() => {
@@ -68,14 +82,14 @@ export default function PlayerPage() {
   }
 
   const resetEx = useCallback((st: S) => {
-    const ex = EXERCISES[st.idx];
+    const ex = planRef.current[st.idx];
     st.holdLeft = ex.type === "hold" ? (ex.hold ?? 0) : 0;
   }, []);
 
   const completeSet = useCallback((st: S) => {
-    const ex = EXERCISES[st.idx];
+    const ex = planRef.current[st.idx];
     if (st.set < ex.sets) { st.phase = "rest"; st.restLeft = ex.rest; st._after = "nextset"; }
-    else if (st.idx < EXERCISES.length - 1) { st.phase = "rest"; st.restLeft = ex.rest > 0 ? ex.rest : 20; st._after = "nextex"; }
+    else if (st.idx < planRef.current.length - 1) { st.phase = "rest"; st.restLeft = ex.rest > 0 ? ex.rest : 20; st._after = "nextex"; }
     else { st.phase = "done"; st.playing = false; }
   }, []);
 
@@ -92,7 +106,7 @@ export default function PlayerPage() {
         setS((ps) => {
           if (!ps.playing || ps.phase === "done") return ps;
           const ns = { ...ps };
-          const ex = EXERCISES[ns.idx];
+          const ex = planRef.current[ns.idx];
           if (ns.phase === "rest") {
             ns.restLeft -= 1;
             if (ns.restLeft <= 0) startNext(ns);
@@ -207,7 +221,7 @@ export default function PlayerPage() {
           <div style={{ marginTop: 70, textAlign: "center", position: "relative" }}>
             <div style={{ width: 88, height: 88, borderRadius: "50%", background: "#34d0bb", color: "#06352f", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, fontWeight: 800, boxShadow: "0 18px 40px -12px rgba(52,208,187,.6)" }}>✓</div>
             <div className="font-display" style={{ marginTop: 22, fontWeight: 800, fontSize: 32, letterSpacing: "-.02em", color: "#fff" }}>Session complete</div>
-            <div style={{ marginTop: 8, fontSize: 14, color: "#a9c7c1" }}>Lower Back Recovery · all {EXERCISES.length} exercises</div>
+            <div style={{ marginTop: 8, fontSize: 14, color: "#a9c7c1" }}>{plan.name} · all {EXERCISES.length} exercises</div>
           </div>
           <div style={{ marginTop: 26, display: "flex", gap: 11, position: "relative" }}>
             {[["🔥", "streak"], [String(totalSets), "sets done"], ["✓", "today"]].map(([v, l]) => (
@@ -301,7 +315,7 @@ export default function PlayerPage() {
         <div style={{ marginTop: 44, display: "flex", alignItems: "center", gap: 12 }}>
           <Link href="/home" style={{ textDecoration: "none", color: "#6f6a63", fontSize: 20 }}>‹</Link>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>Lower Back Recovery</div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>{plan.name}</div>
             <div style={{ height: 6, borderRadius: 3, background: "#e6e2da", marginTop: 6, overflow: "hidden" }}>
               <div style={{ height: "100%", width: pct + "%", background: "#1f7a6d", borderRadius: 3 }} />
             </div>
